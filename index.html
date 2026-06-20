@@ -1,0 +1,361 @@
+<!--
+  ============================================================
+  BALANCEO DE CARGAS ELÉCTRICAS - Panel ECA
+  Desarrollado por ECA
+  © 2026 ECA - Todos los derechos reservados
+  ============================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Balanceo de Cargas Eléctricas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="container">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-icon"><i class="fas fa-bolt"></i></div>
+     <h1>
+    Balanceo de Cargas Eléctricas
+    <span style="font-size:11px;background:#f1efe8;color:#6b6b67;padding:2px 12px;border-radius:99px;font-weight:500;letter-spacing:0.05em;margin-left:8px;">
+      <i class="fas fa-flask"></i> BETA
+    </span>
+  </h1>
+  <span style="font-size:9px;color:var(--text-hint);margin-left:6px;">
+        · Desarrollado por ECA
+      </span>
+    <div class="header-actions">
+  <button class="btn-header" onclick="cargarEjemplo()">
+    <i class="fas fa-file-import"></i> Ejemplo
+  </button>
+  <button class="btn-header" onclick="exportarDatos()">
+    <i class="fas fa-download"></i> Exportar
+  </button>
+  <a href="privacy.html" target="_blank" class="btn-header" style="text-decoration:none;">
+    <i class="fas fa-shield-alt"></i> Privacidad
+  </a>
+</div>
+  </div>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h4>CONFIGURACIÓN</h4>
+        
+        <div class="field">
+          <span class="modo-label">Modo de entrada</span>
+          <div class="modo-grupo">
+            <button class="modo-btn active" id="btn-modo-corriente" onclick="setModoEntrada('corriente')">
+              <i class="fas fa-bolt" style="margin-right:3px;"></i>Corriente<br><span style="font-size:10px;font-weight:400;">(A)</span>
+            </button>
+            <button class="modo-btn" id="btn-modo-potencia" onclick="setModoEntrada('potencia')">
+              <i class="fas fa-plug" style="margin-right:3px;"></i>Potencia<br><span style="font-size:10px;font-weight:400;">(W)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Voltaje de operación</label>
+          <div class="radio-group">
+            <div class="radio-btn active" data-v="127" onclick="setVoltaje(127,this)">127 V</div>
+            <div class="radio-btn" data-v="240" onclick="setVoltaje(240,this)">240 V</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Voltaje personalizado (V)</label>
+          <input type="number" id="voltaje-custom" placeholder="ej. 220" min="1" oninput="actualizarMetrics()">
+        </div>
+
+        <div class="field">
+          <label>Factor de potencia (fp)</label>
+          <input type="number" id="fp" value="0.90" min="0.01" max="1" step="0.01" oninput="actualizarMetrics()">
+        </div>
+
+        <div class="field">
+          <label>Fase global del tablero</label>
+          <select id="fase-global" onchange="onFaseGlobalChange()">
+            <option value="ABC">Trifásico (ABC)</option>
+            <option value="AB">Bifásico A-B</option>
+            <option value="BC">Bifásico B-C</option>
+            <option value="AC">Bifásico A-C</option>
+            <option value="A">Monofásico A</option>
+            <option value="B">Monofásico B</option>
+            <option value="C">Monofásico C</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sidebar-section">
+        <h3>Acciones</h3>
+        <button class="btn btn-primary" onclick="balancear()">
+          <i class="fas fa-sliders-h"></i> Balancear cargas
+        </button>
+        <button class="btn btn-danger" onclick="limpiarTodo()">
+          <i class="fas fa-eraser"></i> Limpiar todo
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sidebar-section">
+        <h3>Leyenda fases</h3>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:4px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+            <span class="fase-badge fase-A">A</span> Fase A
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+            <span class="fase-badge fase-B">B</span> Fase B
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+            <span class="fase-badge fase-C">C</span> Fase C
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+            <span class="fase-badge fase-AB">AB</span> Bifásico A-B
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+            <span class="fase-badge fase-BC">BC</span> Bifásico B-C
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+            <span class="fase-badge fase-AC">AC</span> Bifásico A-C
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+            <span class="fase-badge fase-ABC">ABC</span> Trifásico
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- SUMMARY -->
+      <div class="summary-grid">
+        <div class="summary-card amp">
+          <span class="label">
+            <i class="fas fa-bolt" style="margin-right:4px;"></i>
+            <span class="tooltip-trigger">
+              Total Corriente
+              <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+              <span class="tooltip-box">Suma de corrientes de todas las fases.<br>Para sistemas trifásicos, es el promedio × 3.</span>
+            </span>
+          </span>
+          <span class="value" id="stat-total-amp">0.0 <span class="unit">A</span></span>
+          <span class="sub" id="stat-detail-amp">Suma de fases</span>
+        </div>
+
+        <div class="summary-card kw">
+          <span class="label">
+            <i class="fas fa-bolt" style="margin-right:4px;"></i>
+            <span class="tooltip-trigger">
+              Potencia Activa
+              <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+              <span class="tooltip-box">Potencia real consumida (kW).<br>Calculada como: S × fp<br>Donde fp es el factor de potencia.</span>
+            </span>
+          </span>
+          <span class="value" id="stat-total-kw">0.00 <span class="unit">kW</span></span>
+          <span class="sub" id="stat-detail-kw">Considera fp</span>
+        </div>
+
+        <div class="summary-card kva">
+          <span class="label">
+            <i class="fas fa-bolt" style="margin-right:4px;"></i>
+            <span class="tooltip-trigger">
+              Potencia Aparente
+              <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+              <span class="tooltip-box">Potencia aparente total (kVA).<br>Depende del tipo de sistema:<br>• Trifásico: √3 × V_L × I<br>• Bifásico: V_L × I<br>• Monofásico: V × I</span>
+            </span>
+          </span>
+          <span class="value" id="stat-total-kva">0.00 <span class="unit">kVA</span></span>
+          <span class="sub" id="stat-detail-kva">Según tipo de sistema</span>
+        </div>
+
+        <div class="summary-card desbalance" id="card-desbalance">
+          <span class="label">
+            <i class="fas fa-balance-scale" style="margin-right:4px;"></i>
+            <span class="tooltip-trigger">
+              Desbalance
+              <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+              <span class="tooltip-box">Desbalance entre fases según NEMA.<br>• &lt; 5% → Óptimo ✅<br>• 5-10% → Moderado ⚠️<br>• &gt; 10% → Crítico 🚨</span>
+            </span>
+          </span>
+          <span class="value" id="stat-desbalance">—</span>
+          <span class="sub" id="stat-detail-desbalance">NEMA / NEC</span>
+        </div>
+      </div>
+
+      <!-- PHASE BARS -->
+      <div class="phase-bars">
+        <span class="label">Carga por fase</span>
+        <div class="phase-bar-wrap">
+          <div class="phase-bar-header">
+            <span class="name">Fase A</span>
+            <span class="value" id="bar-lbl-A">0.0 A</span>
+          </div>
+          <div class="phase-bar-track">
+            <div class="phase-bar-fill A animated" id="bar-A" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="phase-bar-wrap">
+          <div class="phase-bar-header">
+            <span class="name">Fase B</span>
+            <span class="value" id="bar-lbl-B">0.0 A</span>
+          </div>
+          <div class="phase-bar-track">
+            <div class="phase-bar-fill B animated" id="bar-B" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="phase-bar-wrap">
+          <div class="phase-bar-header">
+            <span class="name">Fase C</span>
+            <span class="value" id="bar-lbl-C">0.0 A</span>
+          </div>
+          <div class="phase-bar-track">
+            <div class="phase-bar-fill C animated" id="bar-C" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT ALERT -->
+      <div class="result-alert" id="result-alert">
+        <i class="fas fa-info-circle"></i>
+        <span id="result-msg"></span>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrap">
+        <table id="tabla">
+          <thead>
+            <tr>
+              <th class="col-circ">
+                <span class="tooltip-trigger">
+                  No.
+                  <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+                  <span class="tooltip-box">Número de circuito en el panel</span>
+                </span>
+              </th>
+              <th class="col-desc">
+                <span class="tooltip-trigger">
+                  Descripcion
+                  <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+                  <span class="tooltip-box">Identificación del circuito (ej. Alumbrado, Contactos, Aire Acondicionado o Motores). Ayuda a organizar la distribución en el panel.</span>
+                </span>
+              </th>
+              <th class="col-tipo">
+                <span class="tooltip-trigger">
+                  Fases
+                  <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+                  <span class="tooltip-box">Número de fases que utiliza el circuito:<br>• 1 → Monofásico (A, B o C)<br>• 2 → Bifásico (AB, BC o AC)<br>• 3 → Trifásico (ABC)</span>
+                </span>
+              </th>
+              <th class="col-potencia" id="th-potencia" style="display:none;">
+                <span class="tooltip-trigger">
+                  Potencia (W)
+                  <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+                  <span class="tooltip-box">Potencia del circuito en watts.<br>Se convierte a corriente internamente<br>usando voltaje y fp configurados.</span>
+                </span>
+              </th>
+              <th class="col-carga" id="th-carga">
+                <span class="tooltip-trigger">
+                  Corriente (A)
+                  <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+                  <span class="tooltip-box">Corriente nominal del circuito en amperios.<br>Determina el ITM recomendado.</span>
+                </span>
+              </th>
+              <th class="col-itm">
+                <span class="tooltip-trigger">
+                  ITM (A)
+                  <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+                  <span class="tooltip-box">Interruptor Termomagnético recomendado.<br>Valor comercial inmediato superior.</span>
+                </span>
+              </th>
+              <th class="col-asignada">
+                <span class="tooltip-trigger">
+                  Fase Asignada
+                  <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+                  <span class="tooltip-box">Fase(s) asignada(s) por el algoritmo:<br>• A, B, C → Monofásico<br>• AB, BC, AC → Bifásico<br>• ABC → Trifásico</span>
+                </span>
+              </th>
+              <th class="col-posicion">
+                <span class="tooltip-trigger">
+                  Posición
+                  <span class="tooltip-icon"><i class="fas fa-info"></i></span>
+                  <span class="tooltip-box">Posición física en el panel.<br>Números indican los slots ocupados.</span>
+                </span>
+              </th>
+              <th class="col-accion"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- PANEL UNIFILAR -->
+      <div class="panel-section" id="panel-section">
+        <div class="panel-section-header">
+          <i class="fas fa-project-diagram" style="color:var(--text-hint);font-size:12px;"></i>
+          <h3>Diagrama Unifilar del Panel</h3>
+          <span id="panel-config-label" style="font-size:11px;color:var(--text-muted);margin-left:4px;"></span>
+        </div>
+        <div class="panel-visual-wrap">
+          <div class="panel-unifilar">
+            <canvas id="panel-canvas" width="860" height="400"></canvas>
+          </div>
+        </div>
+        <div class="panel-legend">
+          <div class="panel-legend-item">
+            <div class="panel-legend-line" style="background:#1a1a18;"></div> Barra Fase A
+          </div>
+          <div class="panel-legend-item">
+            <div class="panel-legend-line" style="background:#c0392b;"></div> Barra Fase B
+          </div>
+          <div class="panel-legend-item">
+            <div class="panel-legend-line" style="background:#1a5fa5;"></div> Barra Fase C
+          </div>
+          <div class="panel-legend-item">
+            <div class="panel-legend-dot" style="background:#e6f1fb;border:2px solid #acabab;"></div> Conexión
+          </div>
+        </div>
+      </div>
+
+      <!-- STATUS BAR -->
+      <div class="status-bar">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-msg">Listo · Cargando...</span>
+        <span style="margin-left:auto;font-size:11px;">
+    <a href="privacy.html" target="_blank" style="color:var(--text-hint);text-decoration:none;">
+      <i class="fas fa-shield-alt"></i> Privacidad
+    </a>
+  </span>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SCRIPTS                                      -->
+<!-- ============================================ -->
+
+<!-- API URL Configuration -->
+<script>
+  // Configuración de la URL del backend
+  const API_URL = 'https://tu-backend.onrender.com/api'; // Cambiar por tu URL real
+</script>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/table.js"></script>
+<script src="js/metrics.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
