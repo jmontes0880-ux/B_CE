@@ -87,7 +87,9 @@ function balancear() {
   },
   body: JSON.stringify({
     circuitos: circuitosSanitizados,
-    faseGlobal: faseGlobal
+    faseGlobal: faseGlobal,
+    voltaje: voltaje,
+    fp: getFP() 
   })
 })
   .then(function(response) {
