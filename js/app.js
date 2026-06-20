@@ -403,56 +403,47 @@ function initApp() {
 // EXPONER TODAS LAS FUNCIONES GLOBALMENTE
 // ============================================
 
-// Función para exponer funciones de forma segura
-function exponerFuncion(nombre, fn) {
-  if (typeof fn === 'function') {
-    window[nombre] = fn;
-    console.log('✅ Función expuesta:', nombre);
-  } else {
-    console.warn('⚠️ Función no encontrada:', nombre);
-    window[nombre] = function() {
-      console.warn('⚠️ Función ' + nombre + ' no está definida (llamada desde HTML/panel.js)');
-    };
-  }
-}
+// Las funciones de table.js, metrics.js y panel.js cargan después,
+// por eso exponemos todo dentro de DOMContentLoaded
+window.addEventListener('DOMContentLoaded', function() {
 
-// Exponer funciones principales
-exponerFuncion('balancear', balancear);
-exponerFuncion('cargarEjemplo', cargarEjemplo);
-exponerFuncion('exportarDatos', exportarDatos);
-exponerFuncion('limpiarTodo', limpiarTodo);
-exponerFuncion('setModoEntrada', setModoEntrada);
-exponerFuncion('setVoltaje', setVoltaje);
-exponerFuncion('actualizarMetrics', actualizarMetrics);
-exponerFuncion('onFaseGlobalChange', onFaseGlobalChange);
-exponerFuncion('initApp', initApp);
+  var fns = {
+    // Definidas en app.js
+    balancear:         balancear,
+    showAlert:         showAlert,
+    hideAlert:         hideAlert,
+    setStatus:         setStatus,
+    guardarEstado:     guardarEstado,
+    restaurarEstado:   restaurarEstado,
+    getFP:             getFP,
+    getFaseGlobal:     getFaseGlobal,
+    asignarPosiciones: asignarPosiciones,
+    initApp:           initApp,
 
-// Exponer funciones de alertas y estado
-exponerFuncion('showAlert', showAlert);
-exponerFuncion('hideAlert', hideAlert);
-exponerFuncion('setStatus', setStatus);
-exponerFuncion('guardarEstado', guardarEstado);
-exponerFuncion('restaurarEstado', restaurarEstado);
+    // Definidas en table.js
+    cargarEjemplo:     typeof cargarEjemplo     !== 'undefined' ? cargarEjemplo     : null,
+    exportarDatos:     typeof exportarDatos     !== 'undefined' ? exportarDatos     : null,
+    limpiarTodo:       typeof limpiarTodo       !== 'undefined' ? limpiarTodo       : null,
+    setModoEntrada:    typeof setModoEntrada    !== 'undefined' ? setModoEntrada    : null,
 
-// Exponer funciones de utilidad
-exponerFuncion('getFP', getFP);
-exponerFuncion('getFaseGlobal', getFaseGlobal);
-exponerFuncion('asignarPosiciones', asignarPosiciones);
+    // Definidas en metrics.js / panel.js / utils.js
+    setVoltaje:        typeof setVoltaje        !== 'undefined' ? setVoltaje        : null,
+    actualizarMetrics: typeof actualizarMetrics !== 'undefined' ? actualizarMetrics : null,
+    onFaseGlobalChange:typeof onFaseGlobalChange!== 'undefined' ? onFaseGlobalChange: null,
+  };
 
-console.log('✅ Todas las funciones globales expuestas correctamente');
-console.log('📋 Funciones disponibles:');
-var funcionesEsperadas = [
-  'balancear', 'cargarEjemplo', 'exportarDatos', 'limpiarTodo',
-  'setModoEntrada', 'setVoltaje', 'actualizarMetrics', 'onFaseGlobalChange',
-  'showAlert', 'setStatus', 'getFP', 'getFaseGlobal'
-];
-funcionesEsperadas.forEach(function(fn) {
-  console.log('  - ' + fn + ': ' + (typeof window[fn] === 'function' ? '✅' : '❌'));
-});
+  Object.keys(fns).forEach(function(nombre) {
+    if (typeof fns[nombre] === 'function') {
+      window[nombre] = fns[nombre];
+      console.log('✅ Función expuesta:', nombre);
+    } else {
+      console.warn('⚠️ Función no encontrada:', nombre);
+      window[nombre] = function() {
+        console.warn('⚠️ ' + nombre + ' no está definida');
+      };
+    }
+  });
 
-// Iniciar cuando el DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
+  console.log('✅ Todas las funciones expuestas');
   initApp();
-}
+});
