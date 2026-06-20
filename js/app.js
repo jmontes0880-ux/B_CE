@@ -91,7 +91,7 @@ function balancear() {
   var circuitosSanitizados = sanitizarCircuitos(circuitos, APP.MAX_CIRCUITOS);
 
   // ============================================
-  // LLAMADA A LA API REST (CORREGIDA)
+  // LLAMADA A LA API REST
   // ============================================
   
   console.log('📤 Enviando a:', API_URL + '/api/balancear');
@@ -255,6 +255,74 @@ function setStatus(msg, loading) {
 }
 
 // ============================================
+// FUNCIÓN CARGAR EJEMPLO
+// ============================================
+
+function cargarEjemplo() {
+  console.log('📂 Cargando datos de ejemplo...');
+  
+  // Limpiar tabla
+  if (typeof limpiarTodo === 'function') {
+    limpiarTodo();
+  } else {
+    // Si limpiarTodo no existe, limpiar manualmente
+    for (var i = 0; i < APP.NUM_FILAS; i++) {
+      var descEl = document.getElementById('desc-' + i);
+      var tipoEl = document.getElementById('tipo-' + i);
+      var cargaEl = document.getElementById('carga-' + i);
+      if (descEl) descEl.value = '';
+      if (tipoEl) tipoEl.value = '1';
+      if (cargaEl) cargaEl.value = '';
+    }
+  }
+  
+  // Datos de ejemplo
+  var datosEjemplo = [
+    { desc: 'Alumbrado Pasillo', tipo: '1', carga: 8 },
+    { desc: 'Contactos Oficina', tipo: '1', carga: 12 },
+    { desc: 'Aire Acondicionado', tipo: '2', carga: 15 },
+    { desc: 'Motores Compresor', tipo: '3', carga: 20 },
+    { desc: 'Iluminación Exterior', tipo: '1', carga: 5 },
+    { desc: 'Contactos Cocina', tipo: '1', carga: 10 },
+    { desc: 'Bomba Agua', tipo: '2', carga: 18 },
+    { desc: 'Ventilación', tipo: '1', carga: 6 },
+    { desc: 'Sistema Seguridad', tipo: '1', carga: 3 },
+    { desc: 'Calefacción', tipo: '2', carga: 25 },
+    { desc: 'Equipos Oficina', tipo: '1', carga: 7 },
+    { desc: 'Refrigeración', tipo: '3', carga: 30 }
+  ];
+  
+  var cargados = 0;
+  datosEjemplo.forEach(function(item, index) {
+    if (index >= APP.NUM_FILAS) return;
+    
+    var descEl = document.getElementById('desc-' + index);
+    var tipoEl = document.getElementById('tipo-' + index);
+    var cargaEl = document.getElementById('carga-' + index);
+    
+    if (descEl) descEl.value = item.desc;
+    if (tipoEl) tipoEl.value = item.tipo;
+    if (cargaEl) cargaEl.value = item.carga;
+    
+    if (typeof actualizarITM === 'function') actualizarITM(index);
+    if (typeof sincronizarFila === 'function') sincronizarFila(index);
+    cargados++;
+  });
+  
+  if (typeof actualizarMetrics === 'function') actualizarMetrics();
+  if (typeof guardarEstado === 'function') guardarEstado();
+  if (typeof showAlert === 'function') showAlert('success', '✅ ' + cargados + ' circuitos de ejemplo cargados');
+  
+  asignaciones = new Array(APP.NUM_FILAS).fill(null);
+  posiciones = new Array(APP.NUM_FILAS).fill(null);
+  resultadosBackend = null;
+  
+  if (typeof Panel !== 'undefined' && Panel.renderDebounced) Panel.renderDebounced();
+  
+  console.log('✅ Datos de ejemplo cargados:', cargados, 'circuitos');
+}
+
+// ============================================
 // PERSISTENCIA (localStorage)
 // ============================================
 
@@ -399,13 +467,6 @@ function initApp() {
   });
 }
 
-// Iniciar cuando el DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
-
 // ============================================
 // EXPONER TODAS LAS FUNCIONES GLOBALMENTE
 // ============================================
@@ -456,3 +517,10 @@ var funcionesEsperadas = [
 funcionesEsperadas.forEach(function(fn) {
   console.log('  - ' + fn + ': ' + (typeof window[fn] === 'function' ? '✅' : '❌'));
 });
+
+// Iniciar cuando el DOM esté listo
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
