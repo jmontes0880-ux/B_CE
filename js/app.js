@@ -79,16 +79,17 @@ function balancear() {
   // LLAMADA A LA API REST (Reemplazo de google.script.run)
   // ============================================
   
-  fetch(API_URL + '/balancear', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      circuitos: circuitosSanitizados,
-      faseGlobal: faseGlobal
-    })
+  fetch(API_URL + '/api/balancear', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({
+    circuitos: circuitosSanitizados,
+    faseGlobal: faseGlobal
   })
+})
   .then(function(response) {
     if (!response.ok) {
       throw new Error('Error en la respuesta del servidor: ' + response.status);
