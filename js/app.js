@@ -264,16 +264,6 @@ function cargarEjemplo() {
   // Limpiar tabla
   if (typeof limpiarTodo === 'function') {
     limpiarTodo();
-  } else {
-    // Si limpiarTodo no existe, limpiar manualmente
-    for (var i = 0; i < APP.NUM_FILAS; i++) {
-      var descEl = document.getElementById('desc-' + i);
-      var tipoEl = document.getElementById('tipo-' + i);
-      var cargaEl = document.getElementById('carga-' + i);
-      if (descEl) descEl.value = '';
-      if (tipoEl) tipoEl.value = '1';
-      if (cargaEl) cargaEl.value = '';
-    }
   }
   
   // Datos de ejemplo
