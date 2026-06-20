@@ -6,6 +6,7 @@
  * © 2026 ECA - Todos los derechos reservados
  * ============================================================
  */
+
 // ============================================
 // ESTADO GLOBAL
 // ============================================
@@ -15,6 +16,20 @@ var asignaciones = new Array(APP.NUM_FILAS).fill(null);
 var posiciones = new Array(APP.NUM_FILAS).fill(null);
 var estaBalanceando = false;
 var resultadosBackend = null;
+
+// ============================================
+// FUNCIONES AUXILIARES
+// ============================================
+
+function getFP() {
+  var fpInput = document.getElementById('fp');
+  return fpInput ? parseFloat(fpInput.value) || 0.9 : 0.9;
+}
+
+function getFaseGlobal() {
+  var select = document.getElementById('fase-global');
+  return select ? select.value : 'ABC';
+}
 
 // ============================================
 // BALANCEAR - LLAMADA A LA API
@@ -76,30 +91,42 @@ function balancear() {
   var circuitosSanitizados = sanitizarCircuitos(circuitos, APP.MAX_CIRCUITOS);
 
   // ============================================
-  // LLAMADA A LA API REST (Reemplazo de google.script.run)
+  // LLAMADA A LA API REST (CORREGIDA)
   // ============================================
   
-  fetch(API_URL + '/api/balancear', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  },
-  body: JSON.stringify({
+  console.log('📤 Enviando a:', API_URL + '/api/balancear');
+  console.log('📦 Payload:', {
     circuitos: circuitosSanitizados,
     faseGlobal: faseGlobal,
     voltaje: voltaje,
-    fp: getFP() 
+    fp: getFP()
+  });
+  
+  fetch(API_URL + '/api/balancear', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      circuitos: circuitosSanitizados,
+      faseGlobal: faseGlobal,
+      voltaje: voltaje,
+      fp: getFP()
+    })
   })
-})
   .then(function(response) {
+    console.log('📥 Response status:', response.status);
     if (!response.ok) {
-      throw new Error('Error en la respuesta del servidor: ' + response.status);
+      return response.json().then(function(errData) {
+        throw new Error(errData.error || 'Error en la respuesta del servidor: ' + response.status);
+      });
     }
     return response.json();
   })
   .then(function(resultado) {
     estaBalanceando = false;
+    console.log('✅ Resultado:', resultado);
     
     if (!resultado || typeof resultado !== 'object') {
       showAlert('error', '❌ Respuesta inválida del servidor');
@@ -148,9 +175,9 @@ function balancear() {
   .catch(function(error) {
     estaBalanceando = false;
     var msg = error && error.message ? sanitizarString(error.message, 'Error desconocido') : 'Error desconocido';
+    console.error('❌ Error en balanceo:', error);
     showAlert('error', '❌ Error al balancear: ' + msg);
     setStatus('Error en balanceo');
-    console.error(error);
   });
 }
 
@@ -197,25 +224,33 @@ function asignarPosiciones() {
 
 function showAlert(type, msg) {
   var el = document.getElementById('result-alert');
+  if (!el) return;
   el.className = 'result-alert show ' + type;
-  document.getElementById('result-msg').textContent = msg;
+  var msgEl = document.getElementById('result-msg');
+  if (msgEl) msgEl.textContent = msg;
   var icon = el.querySelector('i');
-  if (type === 'success') icon.className = 'fas fa-check-circle';
-  else if (type === 'error') icon.className = 'fas fa-exclamation-circle';
-  else icon.className = 'fas fa-info-circle';
+  if (icon) {
+    if (type === 'success') icon.className = 'fas fa-check-circle';
+    else if (type === 'error') icon.className = 'fas fa-exclamation-circle';
+    else icon.className = 'fas fa-info-circle';
+  }
 }
 
 function hideAlert() {
-  document.getElementById('result-alert').className = 'result-alert';
+  var el = document.getElementById('result-alert');
+  if (el) el.className = 'result-alert';
 }
 
 function setStatus(msg, loading) {
-  document.getElementById('status-msg').textContent = msg;
+  var statusMsg = document.getElementById('status-msg');
+  if (statusMsg) statusMsg.textContent = msg;
   var dot = document.getElementById('status-dot');
-  if (loading) {
-    dot.classList.add('loading');
-  } else {
-    dot.classList.remove('loading');
+  if (dot) {
+    if (loading) {
+      dot.classList.add('loading');
+    } else {
+      dot.classList.remove('loading');
+    }
   }
 }
 
@@ -370,3 +405,54 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
+
+// ============================================
+// EXPONER TODAS LAS FUNCIONES GLOBALMENTE
+// ============================================
+
+// Función para exponer funciones de forma segura
+function exponerFuncion(nombre, fn) {
+  if (typeof fn === 'function') {
+    window[nombre] = fn;
+    console.log('✅ Función expuesta:', nombre);
+  } else {
+    console.warn('⚠️ Función no encontrada:', nombre);
+    window[nombre] = function() {
+      console.warn('⚠️ Función ' + nombre + ' no está definida (llamada desde HTML/panel.js)');
+    };
+  }
+}
+
+// Exponer funciones principales
+exponerFuncion('balancear', balancear);
+exponerFuncion('cargarEjemplo', cargarEjemplo);
+exponerFuncion('exportarDatos', exportarDatos);
+exponerFuncion('limpiarTodo', limpiarTodo);
+exponerFuncion('setModoEntrada', setModoEntrada);
+exponerFuncion('setVoltaje', setVoltaje);
+exponerFuncion('actualizarMetrics', actualizarMetrics);
+exponerFuncion('onFaseGlobalChange', onFaseGlobalChange);
+exponerFuncion('initApp', initApp);
+
+// Exponer funciones de alertas y estado
+exponerFuncion('showAlert', showAlert);
+exponerFuncion('hideAlert', hideAlert);
+exponerFuncion('setStatus', setStatus);
+exponerFuncion('guardarEstado', guardarEstado);
+exponerFuncion('restaurarEstado', restaurarEstado);
+
+// Exponer funciones de utilidad
+exponerFuncion('getFP', getFP);
+exponerFuncion('getFaseGlobal', getFaseGlobal);
+exponerFuncion('asignarPosiciones', asignarPosiciones);
+
+console.log('✅ Todas las funciones globales expuestas correctamente');
+console.log('📋 Funciones disponibles:');
+var funcionesEsperadas = [
+  'balancear', 'cargarEjemplo', 'exportarDatos', 'limpiarTodo',
+  'setModoEntrada', 'setVoltaje', 'actualizarMetrics', 'onFaseGlobalChange',
+  'showAlert', 'setStatus', 'getFP', 'getFaseGlobal'
+];
+funcionesEsperadas.forEach(function(fn) {
+  console.log('  - ' + fn + ': ' + (typeof window[fn] === 'function' ? '✅' : '❌'));
+});
