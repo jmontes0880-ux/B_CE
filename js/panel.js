@@ -657,24 +657,6 @@ var Panel = {
   }
 };
 
-// Forzar redibujado después de balancear
-var originalBalancear = balancear;
-balancear = function() {
-  originalBalancear.apply(this, arguments);
-  // Redibujar después de 500ms
-  setTimeout(function() {
-    Panel.renderDebounced();
-  }, 500);
-};
-
-// También redibujar después de cargar ejemplo
-var originalCargarEjemplo = cargarEjemplo;
-cargarEjemplo = function() {
-  originalCargarEjemplo.apply(this, arguments);
-  setTimeout(function() {
-    Panel.renderDebounced();
-  }, 500);
-};
 
 // Polyfill para roundRect si no existe
 if (!CanvasRenderingContext2D.prototype.roundRect) {
